@@ -5,6 +5,7 @@ import torchvision
 import torch.nn as nn
 from PIL import Image
 import cv2
+import pandas as pd
 
 from .constants import *
 
@@ -51,6 +52,55 @@ class FindLostAnimal():
         self.model_classification_dog_breed.eval()
         # self.model_classification_dog_color.eval()
         self.model_classification_dog_tail.eval()
+
+    def __check_intersection(self, cr_1, cr_2):
+        x1 = [cr_1[0], cr_1[2]]
+        y1 = [cr_1[1], cr_1[3]]
+        x2 = [cr_2[0], cr_2[2]]
+        y2 = [cr_2[1], cr_2[3]]
+
+        return not (max(x1) < min(x2) or 
+                    min(x1) > max(x2) or 
+                    max(y1) < min(y2) or 
+                    min(y1) > max(y2))
+
+
+    def __drop_uninformative_boxes(self, box, labels, dog_label):
+        bad_boxes = np.zeros(len(box))
+        for i in range(len(box)):
+            if min(box[i][2]-box[i][0], box[i][3]-box[i][1]) <= 25:
+                bad_boxes[i]=1
+
+        for i in range(len(box)):
+            for j in range(i + 1, len(box)):
+                if bad_boxes[i] == 1:
+                    break
+                if self.__check_intersection(box[i], box[j]):
+                    if (labels[i] == dog_label):
+                        if not (labels[j] == dog_label):
+                            bad_boxes[j] = 1
+                            continue
+                    else:   
+                        if (labels[j] == dog_label):
+                            bad_boxes[i] = 1
+                            continue
+                            
+                    s1 = (box[i][2]-box[i][0])*(box[i][3]-box[i][1])
+                    s2 = (box[j][2]-box[j][0])*(box[j][3]-box[j][1])
+                    if (s1 > s2):
+                        bad_boxes[j]=1
+                    else:
+                        bad_boxes[i]=1
+
+        result_boxes = []
+        result_labels = []
+
+        for i in range(len(bad_boxes)):
+            if (bad_boxes[i] == 0):
+                result_boxes.append(box[i])
+                result_labels.append(labels[i])
+
+        return result_boxes, result_labels
 
 
     def __get_cropped_image(self, picture, coordinates, expand_coeff=2.0):
@@ -163,15 +213,18 @@ class FindLostAnimal():
         dictionary["isSomeoneHere"][n] = 0
 
         dictionary["src_file"] = [filename] * (n + 1)
+        
+        date = datetime.datetime.now()
 
         for i in range(n):
             dictionary["croppedFileName"][i] = saved_files[i]
             dictionary["isSomeoneHere"][i] = 1
             dictionary["color"][i] = features[i][1]
             dictionary["tail"][i] = self.__get_tail(features[i][0]) # TODO
-            dictionary["top3Breed"][i] = features[i][0]
+            dictionary["top3Breed"][i] = ','.join(features[i][0])
             dictionary["cam_adress"][i] = "улица Пушкина, д. Колотушкина" # TODO
-            dictionary["time_photographed"][i] = "23:59" # TODO
+            dictionary["time_photographed"][i] = f"{date.day}.{date.month}.\
+            {date.year} в {date.hour}:{date.minute}" # TODO
         table = pd.DataFrame(dictionary)
         table.to_csv("table.csv")
         
@@ -199,6 +252,8 @@ class FindLostAnimal():
 
         # get predictions of detector
         boxes, labels = self.__get_detection_predictions(picture)
+        # drop bad boxes
+        boxes, labels = self.__drop_uninformative_boxes(boxes, labels, inst_classes.index("dog"))
 
         # variable cnt shows number of cropped dog
         cnt = 0
@@ -245,7 +300,7 @@ class FindLostAnimal():
         return result_features
 
 '''
-example of usage:
+Example of usage:
 
 find_lost_animal = FindLostAnimal(
     model_detection,
@@ -261,4 +316,5 @@ find_lost_animal = FindLostAnimal(
     tails_converter,
     superresolution,
 )
+
 '''

@@ -3,7 +3,9 @@ import numpy as np
 from torchvision.models import detection
 import torchvision
 import torch.nn as nn
-
+from colormath.color_objects import sRGBColor, LabColor
+from colormath.color_conversions import convert_color
+from colormath.color_diff import delta_e_cie2000
 
 from .constants import *
 
@@ -19,12 +21,12 @@ class Mock():
 
 
 class ColorDetector():
-    def __init__(self, colors, THRESHOLD=1./8):
+    def __init__(self, list_of_colors, THRESHOLD=1./8):
         self.THRESHOLD = THRESHOLD
-        self.colors = np.array(colors)
+        self.list_of_colors = np.array(list_of_colors)
 
 
-    def __get_cropped_image(picture, coordinates):
+    def __get_cropped_image(self, picture, coordinates):
         '''
             picture: torch.Tensor
             coordinates: "indexed set" of 4 coordinates: [x1, y1, x2, y2]
@@ -55,7 +57,20 @@ class ColorDetector():
         for channel in range(cropped_image.shape[0]):
             color[channel] = cropped_image[channel].mean().item() * 256
         color = np.array(color)
-        return np.argmin(np.sum((self.colors - color) ** 2.0, axis=1))
+
+        plt.imshow((cropped_image.permute(1, 2, 0).detach().numpy() * 256).astype(dtype=np.uint8))
+        plt.show()
+
+        list_of_colors_colormath = [convert_color(sRGBColor(
+            col[0] / 255, 
+            col[1] / 255, 
+            col[2] / 255), LabColor) for col in self.list_of_colors]
+        color_colormath = convert_color(sRGBColor(
+            color[0] / 255, 
+            color[1] / 255, 
+            color[2] / 255), LabColor)
+        distances = [delta_e_cie2000(col, color_colormath) for col in list_of_colors_colormath]
+        return np.argmin(distances)
 
 
 
