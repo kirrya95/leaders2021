@@ -1,0 +1,5 @@
+,src_file,croppedFileName,isSomeoneHere,color,tail,top3Breed,cam_adress,time_photographed
+0,publicpreview.jpeg,/Users/kirillbogomolov/Desktop/Coding/react-2/build/cropped/test1.jpg,1,Black,long,"Scottish_deerhound,Chesapeake_Bay_retriever,Airedale","улица Пушкина, д. Колотушкина",23.10.            2021 в 19:38
+1,publicpreview.jpeg,/Users/kirillbogomolov/Desktop/Coding/react-2/build/cropped/test2.jpg,1,Gray,long,"Rhodesian_ridgeback,Chesapeake_Bay_retriever,pug","улица Пушкина, д. Колотушкина",23.10.            2021 в 19:38
+2,publicpreview.jpeg,/Users/kirillbogomolov/Desktop/Coding/react-2/build/cropped/test3.jpg,1,Black,long,"Scottish_deerhound,Weimaraner,Chesapeake_Bay_retriever","улица Пушкина, д. Колотушкина",23.10.            2021 в 19:38
+3,publicpreview.jpeg,,0,,,,,
