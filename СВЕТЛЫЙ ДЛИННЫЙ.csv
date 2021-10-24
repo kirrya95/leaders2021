@@ -1,0 +1,32 @@
+,filename,cropped_file_name,is_animal_there,color,tail,top3_breed,is_the_owner_there,address,cam_id,date
+0,А9.jpg,test0.jpg,1,0,0,"pug,Weimaraner,bluetick",True,,,
+1,С36.jpg,,0,,,,,Площадка перед подъездом №3,PVN_hd_UAO_7270_3,"29 сент. 2021, 06:48:15"
+2,А91.jpg,test2.jpg,1,0,0,"Shetland_sheepdog,collie,Siberian_husky",True,,,
+3,B116.jpg,test3.jpg,1,0,2,"Weimaraner,Siberian_husky,kelpie",True,,,
+4,B6.jpg,test4.jpg,1,0,0,"Pomeranian,chow,golden_retriever",True,Площадка перед подъездом №1,PVN_hd_SVAO_1652_1,"28 ue 2021, 07:57:45"
+5,B11.jpg,test5.jpg,1,0,2,"malamute,Siberian_husky,Weimaraner",True,,,
+6,А74.jpg,test6.jpg,1,0,0,"cairn,Norfolk_terrier,Siberian_husky",True,,,
+7,А43.jpg,,0,,,,,,,
+8,А8.jpg,test8.jpg,1,2,2,"Great_Pyrenees,borzoi,Siberian_husky",True,,,
+9,С70.jpg,,0,,,,,,,
+10,B84.jpg,,0,,,,,,,
+11,B56.jpg,,0,,,,,,,
+12,А52.jpg,test12.jpg,1,2,0,"Pomeranian,Siberian_husky,pug",True,Площадка перед подъездом №2,PVN_hd TSAO_4915_2,"28 сент. 2021, 08:02:18"
+13,А51.jpg,test13.jpg,1,0,0,"pug,Pomeranian,Siberian_husky",True,,,
+14,B117.jpg,test14.jpg,1,0,0,"Labrador_retriever,Weimaraner,Brittany_spaniel",True,,,
+15,B65.jpg,test15.jpg,1,0,2,"malamute,Siberian_husky,pug",True,,,
+16,А28.jpg,,0,,,,,,,
+17,B46.jpg,test17.jpg,1,0,2,"golden_retriever,Labrador_retriever,Weimaraner",True,"СВАО проспект Мира, дом 182, корпус 3",hd_SVAO_3055_1,"05 окт. 2021, 08:52:25"
+18,B94.jpg,,0,,,,,,,
+19,А44.jpg,test19.jpg,1,0,2,"Siberian_husky,malamute,pug",True,Площадка перед подъездом №2,PVN_hd_TSAO_4915_2,"28 сент. 2021, 07:08:52"
+20,С37.jpg,test20.jpg,1,0,2,"Great_Pyrenees,Siberian_husky,borzoi",True,Площадка перед подъездом №3,PVN_hd_UAO_7270_3,"29 сент. 2021, 06:48:16"
+21,С44.jpg,test21.jpg,1,0,0,"toy_terrier,Weimaraner,Siberian_husky",True,,,
+22,А13.jpg,,0,,,,,,,
+23,А99.jpg,test23.jpg,1,0,2,"Siberian_husky,malamute,pug",True,Площадка перед подъездом №4,PVN_hd_UZAO_8352_4,"27 ceHT. 2021, 08:09:03"
+24,B33.jpg,,0,,,,,,,
+25,А41.jpg,,0,,,,,Площадка перед подъездом №2,PVN_hd TSAO_4915_2,"28 сент. 2021, 06:58:39"
+26,С73.jpg,,0,,,,,,,
+27,B45.jpg,test27.jpg,1,0,0,"kelpie,Doberman,Staffordshire_bullterrier",True,Площадка перед подъездом №4,PVN_hd_SVAO_3498_4,"28 сент. 2021, 08:27:01"
+28,B83.jpg,,0,,,,,Площадка перед подъездом №5,PVN_hd_SVAO_3081_5,05 окт. 2021. 08:03:42
+29,С57.jpg,,0,,,,,,,
+30,А27.jpg,test30.jpg,1,2,2,"Great_Pyrenees,borzoi,Labrador_retriever",True,,,
