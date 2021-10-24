@@ -1,3 +1,13 @@
+'''
+before running paste in shell:
+    pip3 install pytesseract
+    sudo apt install tesseract-ocr
+    sudo apt-get install tesseract-ocr-rus
+    pip3 install opencv-contrib-python --upgrade
+'''
+
+
+
 import os
 
 import torch
@@ -8,10 +18,10 @@ import torch.nn as nn
 from PIL import Image
 import cv2
 import pandas as pd
+import pytesseract
+
 
 from .constants import *
-
-import datetime
 
 
 
@@ -153,7 +163,22 @@ class FindLostAnimal():
                                 (dogs[j][3] + dogs[j][1]) / 2) / (persons[i][3] - persons[i][1])
 
                 dist[i][j] = max(delta_x, delta_y)
-        return np.sum(dist < THRESHOLD) > 0      
+        return np.sum(dist < THRESHOLD) > 0
+
+
+    def __get_camera_params_and_location_from_img(self, path):
+        image_cv = cv2.imread(path)
+        image_cv = cv2.resize(image_cv, (image_cv.shape[1]*2, image_cv.shape[0]*2,))
+        string = pytesseract.image_to_string(image_cv, lang='eng+rus')
+        id = None; date = None; address = None;
+        try:
+            id = re.findall(r"\s.*_\d\s$", string, re.M)[0][1:-1]
+            date = re.findall(r'^.*\d\d:\d\d:\d\d$', string, re.M)[0]
+            address = re.findall(r'^.*дом.*$', string, re.M)[0]
+        except IndexError:
+            pass
+        
+        return id, address, date
 
 
     def __get_detection_predictions(self, picture):
@@ -223,22 +248,24 @@ class FindLostAnimal():
         return "short" if res["short"] > res["long"] else "long"
 
     
-     def __save_features(self, features, saved_files, filename):
+    def __save_features(self, features, saved_files, filename, id, address, date):
         '''
             strange funtion for saving features in csv file named "table.csv"
             returns: None
         '''
+
         n = len(saved_files)
         keys = [
-            "src_file",              
-            "croppedFileName", 
-            "isSomeoneHere", 
+            "filename",              
+            "cropped_file_name", 
+            "is_animal_there", 
             "color", 
             "tail", 
-            "top3Breed", 
-            "cam_adress", 
-            "time_photographed",
-            "hasOwner"
+            "top3_breed", 
+            "is_the_owner_there",
+            "address",
+            "cam_id",
+            "date",
         ]
         
         dictionary = {}
@@ -246,27 +273,26 @@ class FindLostAnimal():
         for key in keys:
             dictionary[key] = [None] * (n + 1)
 
-        dictionary["isSomeoneHere"][n] = 0
-
-        dictionary["src_file"] = [filename] * (n + 1)
+        dictionary["is_animal_there"][n] = 0
+        dictionary["filename"] = [filename] * (n + 1)
+        dictionary["cam_id"] = [id] * (n + 1)
+        dictionary["address"] = [address] * (n + 1)
+        dictionary["date"] = [date] * (n + 1)
         
         date = datetime.datetime.now()
 
         for i in range(n):
-            dictionary["croppedFileName"][i] = saved_files[i]
-            dictionary["isSomeoneHere"][i] = 1
+            dictionary["cropped_file_name"][i] = saved_files[i]
+            dictionary["is_animal_there"][i] = 1
             dictionary["color"][i] = features[i][1]
             dictionary["tail"][i] = self.__get_tail(features[i][0]) # TODO
-            dictionary["top3Breed"][i] = ','.join(features[i][0])
-            dictionary["cam_adress"][i] = "улица Пушкина, д. Колотушкина" # TODO
-            dictionary["time_photographed"][i] = f"{date.day}.{date.month}.\
-            {date.year} в {date.hour}:{date.minute}"
-            dictionary["hasOwner"][i] = features[i][3]
+            dictionary["top3_breed"][i] = ','.join(features[i][0])
+            dictionary["is_the_owner_there"][i] = features[i][3]
         table = pd.DataFrame(dictionary)
         table.to_csv("table.csv")
 
-        
-    def get_features(self, filename, num_start):
+
+    def get_features(self, filename, num_start=0):
         # read the image
         image = Image.open(filename)
 
@@ -275,7 +301,7 @@ class FindLostAnimal():
             picture_numpy = np.asarray(image)[:, :, :3]
         else:
             picture_numpy = np.asarray(image)
-            
+
         # array of features for dog
         features = []
 
@@ -297,9 +323,13 @@ class FindLostAnimal():
         boxes, labels = self.__drop_uninformative_boxes(
             boxes, labels, probabilities, inst_classes.index("dog"), 0.1
         )
-
+        persons_coordinates = [box for box, label in zip(boxes, labels)\
+                               if label == inst_classes.index("dog")]
         # variable cnt shows number of cropped dog
         cnt = 0
+
+        # get id, address and dame from picture
+        id, address, date = self.__get_camera_params_and_location_from_img(filename)
 
         for box, label in zip(boxes, labels):
 
@@ -310,7 +340,7 @@ class FindLostAnimal():
                 # don't forget to transform cropped_image due to 
                 # classificators expect othed std and mean
                 pred = self.__get_classification_animal_predictions(cropped_image)
-
+                
                 # if it is a dog
                 if pred in self.indices_cat_dog_classification:
                     # self.show_picture(self.__get_cropped_image(picture, box, 1.0))
@@ -328,7 +358,7 @@ class FindLostAnimal():
                     image = Image.fromarray(result_image)
 
                     # and save cropped image
-                    name_of_saved_picture = "/Users/kirillbogomolov/Desktop/Coding/react-2/build/cropped/test" + str(cnt+num_start) + ".jpg"
+                    name_of_saved_picture = "/Users/kirillbogomolov/Desktop/Coding/react-2/build/cropped/test" + str(num_start + cnt) + ".jpg"
                     saved_files.append(name_of_saved_picture)
                     image.save(name_of_saved_picture)
                     cnt += 1
@@ -337,8 +367,15 @@ class FindLostAnimal():
         result_features = self.__convert_features(features)
 
         # save features as csv file
-        self.__save_features(result_features, saved_files, filename)
+        self.__save_features(
+            result_features, 
+            saved_files, 
+            filename, 
+            id, address, 
+            date,
+        )
         return result_features
+
 
 '''
 Example of usage:
