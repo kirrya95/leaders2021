@@ -70,10 +70,22 @@ class FindLostAnimal():
                     min(y1) > max(y2))
 
 
-    def __drop_uninformative_boxes(self, box, labels, dog_label):
+    def __drop_uninformative_boxes(
+                                    self, 
+                                    box, 
+                                    labels, 
+                                    probabilities, 
+                                    dog_label, 
+                                    THRESHOLD_SIZE=25, 
+                                    THRESHOLD_PROB=0.1
+        ):
+        '''
+            drop small useless boxes with low probabilities
+        '''
         bad_boxes = np.zeros(len(box))
         for i in range(len(box)):
-            if min(box[i][2]-box[i][0], box[i][3]-box[i][1]) <= 25:
+            if min(box[i][2] - box[i][0], box[i][3] - box[i][1]) <= THRESHOLD_SIZE or \
+            probabilities[i] < THRESHOLD_PROB:
                 bad_boxes[i]=1
 
         for i in range(len(box)):
@@ -128,22 +140,38 @@ class FindLostAnimal():
             int(x_expanded), 
             int(h_expanded), 
             int(w_expanded),
-        )        
+        )
+
+    def __has_owner(self, dogs, persons, THRESHOLD):
+        dist = np.array([[0 for j in range(len(dogs))] for i in range(len(persons))])
+        for i in range(len(persons)):
+            for j in range(len(dogs)):
+                delta_x = abs((persons[i][2] + persons[i][0]) / 2 -  
+                                (dogs[j][2] + dogs[j][0]) / 2) / ((dogs[j][2] - dogs[j][0]))
+
+                delta_y = abs((persons[i][3] + persons[i][1]) / 2 -  
+                                (dogs[j][3] + dogs[j][1]) / 2) / (persons[i][3] - persons[i][1])
+
+                dist[i][j] = max(delta_x, delta_y)
+        return np.sum(dist < THRESHOLD) > 0      
 
 
     def __get_detection_predictions(self, picture):
         '''
-            returns boxes and labels
+            returns predictions of the detector model
         '''
         pred = self.model_detection(picture)
-        return pred[0]["boxes"], pred[0]["labels"]
+        return pred
+
     
     def __get_classification_animal_predictions(self, cropped_picture):
         '''
             determines class of an animal
             returns index of the most probable class
         '''
-        pred = self.model_classification_animal(cropped_picture)
+        pred = self.model_classification_animal(
+            self.transforms(cropped_picture)
+        )
         label = pred.argmax(axis=1)[0].item()
         return label
 
@@ -157,14 +185,15 @@ class FindLostAnimal():
         for data in features:
             result.append(
                 [
-                 [self.converter_dog_breed[str(breed)] for breed in data[0]],
+                 [self.converter_dog_breed[breed] for breed in data[0]],
                  self.converter_dog_color[data[1]], 
-                 self.converter_dog_tail[data[2]], 
+                 self.converter_dog_tail[data[2]],
+                 data[3],
                 ]
             )
         return result
 
-    def __get_dog_features(self, dog_image, k=3):
+    def __get_dog_features(self, dog_image, dog_coordinates, persons_coordinates, k=3):
         '''
             expect real image! not normalized
             return dog of features in list:
@@ -181,6 +210,7 @@ class FindLostAnimal():
                 ind,
                 self.model_classification_dog_color(dog_image), 
                 self.model_classification_dog_tail(normalized_picture).argmax(axis=1)[0].item(), 
+                self.__has_owner([dog_coordinates], persons_coordinates, 3.0) # strange constant
         ]
 
     def __get_tail(self, breeds):
@@ -193,7 +223,7 @@ class FindLostAnimal():
         return "short" if res["short"] > res["long"] else "long"
 
     
-    def __save_features(self, features, saved_files, filename):
+     def __save_features(self, features, saved_files, filename):
         '''
             strange funtion for saving features in csv file named "table.csv"
             returns: None
@@ -208,6 +238,7 @@ class FindLostAnimal():
             "top3Breed", 
             "cam_adress", 
             "time_photographed",
+            "hasOwner"
         ]
         
         dictionary = {}
@@ -217,10 +248,9 @@ class FindLostAnimal():
 
         dictionary["isSomeoneHere"][n] = 0
 
-        dictionary["src_file"] = [filename.split('/')[-1]] * (n + 1)
+        dictionary["src_file"] = [filename] * (n + 1)
         
         date = datetime.datetime.now()
-        # print('saved files', saved_files)
 
         for i in range(n):
             dictionary["croppedFileName"][i] = saved_files[i]
@@ -230,12 +260,13 @@ class FindLostAnimal():
             dictionary["top3Breed"][i] = ','.join(features[i][0])
             dictionary["cam_adress"][i] = "улица Пушкина, д. Колотушкина" # TODO
             dictionary["time_photographed"][i] = f"{date.day}.{date.month}.\
-            {date.year} в {date.hour}:{date.minute}" # TODO
+            {date.year} в {date.hour}:{date.minute}"
+            dictionary["hasOwner"][i] = features[i][3]
         table = pd.DataFrame(dictionary)
         table.to_csv("table.csv")
-        
-    def get_features(self, filename, i):
 
+        
+    def get_features(self, filename, num_start):
         # read the image
         image = Image.open(filename)
 
@@ -257,9 +288,15 @@ class FindLostAnimal():
         picture.unsqueeze_(0)
 
         # get predictions of detector
-        boxes, labels = self.__get_detection_predictions(picture)
+        detector_predictions = self.__get_detection_predictions(picture)[0]
+        boxes = detector_predictions["boxes"]
+        labels = detector_predictions["labels"]
+        probabilities = detector_predictions["scores"]
+
         # drop bad boxes
-        boxes, labels = self.__drop_uninformative_boxes(boxes, labels, inst_classes.index("dog"))
+        boxes, labels = self.__drop_uninformative_boxes(
+            boxes, labels, probabilities, inst_classes.index("dog"), 0.1
+        )
 
         # variable cnt shows number of cropped dog
         cnt = 0
@@ -272,15 +309,13 @@ class FindLostAnimal():
 
                 # don't forget to transform cropped_image due to 
                 # classificators expect othed std and mean
-                pred = self.__get_classification_animal_predictions(
-                    self.transforms(cropped_image)
-                )
+                pred = self.__get_classification_animal_predictions(cropped_image)
 
                 # if it is a dog
                 if pred in self.indices_cat_dog_classification:
                     # self.show_picture(self.__get_cropped_image(picture, box, 1.0))
 
-                    features.append(self.__get_dog_features(cropped_image))
+                    features.append(self.__get_dog_features(cropped_image, box, persons_coordinates))
                     cropped_image_numpy = (
                         self.__get_cropped_image(picture, box, 1.0)[0].\
                         permute(1, 2, 0).\
@@ -293,8 +328,7 @@ class FindLostAnimal():
                     image = Image.fromarray(result_image)
 
                     # and save cropped image
-                    print(os.getcwd())
-                    name_of_saved_picture = "/Users/kirillbogomolov/Desktop/Coding/react-2/build/cropped/test" + str(cnt+i) + ".jpg"
+                    name_of_saved_picture = "/Users/kirillbogomolov/Desktop/Coding/react-2/build/cropped/test" + str(cnt+num_start) + ".jpg"
                     saved_files.append(name_of_saved_picture)
                     image.save(name_of_saved_picture)
                     cnt += 1

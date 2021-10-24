@@ -6,8 +6,6 @@ import torch.nn as nn
 from colormath.color_objects import sRGBColor, LabColor
 from colormath.color_conversions import convert_color
 from colormath.color_diff import delta_e_cie2000
-
-
 import cv2
 
 from .constants import *
@@ -61,9 +59,6 @@ class ColorDetector():
             color[channel] = cropped_image[channel].mean().item() * 256
         color = np.array(color)
 
-        # plt.imshow((cropped_image.permute(1, 2, 0).detach().numpy() * 256).astype(dtype=np.uint8))
-        # plt.show()
-
         list_of_colors_colormath = [convert_color(sRGBColor(
             col[0] / 255, 
             col[1] / 255, 
@@ -76,20 +71,16 @@ class ColorDetector():
         return np.argmin(distances)
 
 
-
 # MODELS
 # superresolution model
 superresolution = cv2.dnn_superres.DnnSuperResImpl_create()
-path = "/Users/kirillbogomolov/Desktop/Coding/react-2/leaders2021/FSRCNN_x4.pb"
+path = "FSRCNN_x4.pb"
 superresolution.readModel(path)
 superresolution.setModel("fsrcnn",4)
 
 
 # color detector
 color_detector = ColorDetector(colors_vec)
-
-
-FILENAME_1 = '/Users/kirillbogomolov/Desktop/Coding/react-2/leaders2021/model_classification_dog_breeds.pt'
 
 
 # classification dog breed
@@ -106,7 +97,7 @@ model_classification_dog_breed_sp = nn.Sequential(
                       nn.Linear(256, n_classes_classfication_dog_breed)
                       )
 model_classification_dog_breed_sp.load_state_dict(
-    torch.load(FILENAME_1, map_location=torch.device('cpu'))
+    torch.load('FILENAME', map_location=torch.device('cpu'))
     )
 
 model_classification_dog_breed = nn.Sequential(model_classification_dog_breed_fp, 
@@ -129,11 +120,9 @@ model_classification_cat_dog_sp = nn.Sequential(
     nn.Linear(64, n_classes_classfication_cat_dog)
 )
 
-FILENAME_2 = '/Users/kirillbogomolov/Desktop/Coding/react-2/leaders2021/new_model_cat_dogs_bq.pt'
-
 
 model_classification_cat_dog_sp.load_state_dict(
-    torch.load(FILENAME_2, map_location=torch.device('cpu'))
+    torch.load('FILENAME', map_location=torch.device('cpu'))
     )
 model_classification_cat_dog = nn.Sequential(model_classification_cat_dog_fp, 
                                              model_classification_cat_dog_sp)
