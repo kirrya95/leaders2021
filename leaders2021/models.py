@@ -120,6 +120,26 @@ model_classification_cat_dog_sp = nn.Sequential(
     nn.Linear(64, n_classes_classfication_cat_dog)
 )
 
+model_classification_dog_breed = torchvision.models.resnet101(pretrained=True)
+for param in model_classification_dog_breed.parameters():
+    param.requires_grad=False
+model_classification_dog_breed.fc = nn.Sequential(
+                      nn.Linear(2048, 1024),
+                      nn.Dropout(0.2),
+                      nn.Tanh(),
+                      nn.Linear(1024, 512),
+                      nn.Dropout(0.2),
+                      nn.Tanh(),
+                      nn.Linear(512, 256),
+                      nn.ReLU(),
+                      nn.Linear(256, 44)
+                      )
+model_classification_dog_breed.load_state_dict(
+    torch.load('/content/new_breed_classification.pt', map_location=torch.device('cpu'))
+)
+
+
+
 
 model_classification_cat_dog_sp.load_state_dict(
     torch.load('FILENAME', map_location=torch.device('cpu'))
