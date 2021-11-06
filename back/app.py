@@ -8,8 +8,7 @@ from werkzeug.utils import secure_filename
 
 from flask_cors import CORS, cross_origin
 
-from leaders2021.models import *
-from leaders2021.main_class import *
+
 import pandas as pd
 import requests
 import numpy as np
@@ -27,16 +26,6 @@ def create_new_folder(local_dir):
     return newpath
 
 
-## создание начального тензора для нейросети
-class Mock():
-    def __init__(self, out_size):
-        self.out_size = out_size
-
-    def eval(self):
-        pass
-
-    def __call__(self, x):
-        return torch.ones((x.size()[0], self.out_size))
 
 
 ## отображение главной страницы по адресу http://<ip>:8000/home
@@ -267,82 +256,7 @@ def results():
     return jsonify(res_data)
 
 
-### принимает на вход серию файлов и возвращает метки для этих фоток
-@flask_app.route('/upload', methods=['POST'])
-@cross_origin()
-def api_root():
-    try:
-        # flask_app.logger.info(PROJECT_HOME)
-        if request.method == 'POST':
-            res = []
 
-            find_lost_animal = FindLostAnimal(
-                model_detection,
-                model_classification_cat_dog,
-                model_classification_dog_breed,
-                color_detector,
-                Mock(2),
-                indices_animal_detection,
-                [1],
-                breeds_converter,
-                colors_names,
-                {0: "enormous"},
-                tails_converter,
-                superresolution,
-            )
-
-            for i in range(len(request.files)):
-                flask_app.logger.info(flask_app.config['UPLOAD_FOLDER'])
-                img = request.files['image' + str(i)]
-                img_name = secure_filename(img.filename)
-                create_new_folder(flask_app.config['UPLOAD_FOLDER'])
-                saved_path = os.path.join(flask_app.config['UPLOAD_FOLDER'], img_name)
-                flask_app.logger.info("saving {}".format(saved_path))
-                img.save(saved_path)
-
-                ###### now NN
-
-                res_ = find_lost_animal.get_features(saved_path, i)
-                print(res_)
-
-                if len(res_) == 0:
-                    return jsonify([{'is_animal_there': 0}])
-
-                df = pd.read_csv('table.csv', encoding='UTF-8')
-                df = df.fillna('null')
-                data = []
-
-                for index, row in df.iterrows():
-                    body = {}
-                    if index != len(list(df.iterrows())) - 1:
-                        for col in df.columns:
-                            # d = {}
-                            # body[index] = 123
-                            # print(row[col])
-                            if col == 'top3_breed':
-                                body[col] = (row[col].split(','))
-                            else:
-
-                                body[col] = (row[col])
-
-                        data.append(body)
-                if len(data) > 0:
-                    res.append(data[0])
-                else:
-                    res.append({''})
-
-            ## Чтобы фото успело на сервере загрузиться
-            time.sleep(3)
-            # res[0][-1] = str(res[0][-1])
-
-            print('final res:', res)
-            # print(type(res[0][0]))
-            return jsonify(res)
-
-        else:
-            return "Where is the image?"
-    except Exception:
-        pass
 
 
 @flask_app.route("/public/images/<path:path>")
