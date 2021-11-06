@@ -1,0 +1,48 @@
+value["is_animal_there"] ? <div class="py-10">
+                <div class=" max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
+                    <div class="md:flex">
+                        <div class="md:flex-shrink-0 my-auto md:ml-2 ">
+                            <img class="h-48 w-full object-cover md:h-3/5 md:w-48 my-auto rounded"
+                                 src={window.location.href+'cropped/' + 'test' + index + '.jpg'}
+                                 alt="Man looking at item at a store"/>
+                        </div>
+                        <div class="p-8">
+                            <div class=" tracking-wide text-sm text-green-500 font-semibold">{value['filename']}
+                            </div>
+                            <p class="block mt-2 text-lg leading-tight font-medium text-black">
+                                Cобака, {'цвет: ' + value.color}, {'хвост: ' + value.tail}, owner_there: {value['is_the_owner_there']}</p>
+                            <div class="flex">
+                                <p class="mt-2 text-gray-500">
+                                    Топ-3 породы:
+                                </p>
+                                <p class="ml-1 mt-2 mx-auto px-2 rounded-3 "
+                                   >{value['top3_breed'][0]}</p>
+                                <p class="mt-2 mx-auto px-2 rounded-3 "
+                                   >{value['top3_breed'][1]}</p>
+                                <p class="mt-2 mx-auto px-2 rounded-3 "
+                                   >{value['top3_breed'][2]}</p>
+                            </div>
+                            <div class="flex">
+                                <p class="mt-3 tracking-wide text-sm font-semibold">Адрес камеры:</p>
+                                <p class="ml-4 mt-3 tracking-wide text-sm">{value['address']}</p>
+                            </div>
+                            <div class="flex">
+                                <p class="mt-3 tracking-wide text-sm font-semibold">Время съёмки:</p>
+                                <p class="ml-4 mt-3 tracking-wide text-sm">{value['date']}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> : <div class=" max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
+                    <div class="md:flex">
+                        <div class="md:flex-shrink-0 my-auto md:ml-2 ">
+
+                        </div>
+                        <div class="p-8">
+                            <div class=" tracking-wide text-sm text-green-500 font-semibold">open_moscow_cam_531
+                            </div>
+                            <p class="block mt-2 text-lg leading-tight font-medium text-black">
+                                Собаки не обнаружено.</p>
+                        </div>
+                    </div>
+                </div>
